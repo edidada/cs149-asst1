@@ -1,3 +1,5 @@
 # CS149 Program6 基线剖析
 
 基线05e602d3445123eab76ae1d0f81c370c34441e13。当前只在允许的kmeansThread.cpp增加三阶段计时，stoppingConditionMet/接口/算法不改，尚未优化。远端合成100000×100/10簇输入用于识别热点，明确不替代官方800MB data.dat或PCA图/2.1x要求。官方数据需要Stanford账号，未获取，不伪造校内验证。先取得实际阶段耗时再决定仅并行化一个函数；原dist欧氏距离和收敛语义必须保持。本地不编译执行，无新增Python源文件。
+
+初始远端run43587395390：assignment164.945546ms、centroid9.476286ms、cost15.215937ms，分配占约87%。因此仅并行computeAssignments，按数据点静态分块最多8线程，保留逐点centroid顺序/严格小于tie规则和原dist。质心/成本/收敛不并行、不改。新CI同编译参数链接原baseline，逐项比较所有assignment与centroid的double精确值，再记录完整运行加速；待结果，不提前声称2.1x或官方数据通过。

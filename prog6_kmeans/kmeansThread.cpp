@@ -65,27 +65,29 @@ double dist(double *x, double *y, int nDim) {
  * Assigns each data point to its "closest" cluster centroid.
  */
 void computeAssignments(WorkerArgs *const args) {
-  double *minDist = new double[args->M];
-  
-  // Initialize arrays
-  for (int m =0; m < args->M; m++) {
-    minDist[m] = 1e30;
-    args->clusterAssignments[m] = -1;
-  }
-
-  // Assign datapoints to closest centroids
-  for (int k = args->start; k < args->end; k++) {
-    for (int m = 0; m < args->M; m++) {
-      double d = dist(&args->data[m * args->N],
-                      &args->clusterCentroids[k * args->N], args->N);
-      if (d < minDist[m]) {
-        minDist[m] = d;
-        args->clusterAssignments[m] = k;
+  // Parallelize only assignments. Each worker owns disjoint data points;
+  // centroid order and strict < retain the original first-centroid tie rule.
+  unsigned workers = std::thread::hardware_concurrency();
+  workers = std::max(1u, std::min(8u, workers));
+  workers = std::min(workers, static_cast<unsigned>(std::max(args->M,1)));
+  auto run = [args,workers](unsigned id) {
+    int begin = static_cast<long long>(args->M)*id/workers;
+    int end = static_cast<long long>(args->M)*(id+1)/workers;
+    for(int m=begin;m<end;m++){
+      double best=1e30;
+      int chosen=-1;
+      for(int k=args->start;k<args->end;k++){
+        double d=dist(&args->data[m*args->N],
+                      &args->clusterCentroids[k*args->N],args->N);
+        if(d<best){best=d;chosen=k;}
       }
+      args->clusterAssignments[m]=chosen;
     }
-  }
-
-  delete[] minDist;
+  };
+  std::thread threads[7];
+  for(unsigned i=1;i<workers;i++) threads[i-1]=std::thread(run,i);
+  run(0);
+  for(unsigned i=1;i<workers;i++) threads[i-1].join();
 }
 
 /**

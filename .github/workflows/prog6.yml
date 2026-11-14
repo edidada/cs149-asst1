@@ -11,13 +11,17 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Synthetic baseline hotspot measurement
         run: |
           set -euo pipefail
           mkdir evidence
           git rev-parse HEAD > evidence/commit.txt
           lscpu > evidence/cpu.txt
-          g++ -O3 -std=c++11 -pthread -Icommon tests/prog6_profile.cpp prog6_kmeans/kmeansThread.cpp -o /tmp/kmeans-profile
+          git show 05e602d3445123eab76ae1d0f81c370c34441e13:prog6_kmeans/kmeansThread.cpp > /tmp/kmeans-baseline.cpp
+          g++ -O3 -std=c++11 -pthread -Icommon -DkMeansThread=kMeansBaseline -Ddist=baselineDist -DcomputeAssignments=baselineAssignments -DcomputeCentroids=baselineCentroids -DcomputeCost=baselineCost -c /tmp/kmeans-baseline.cpp -o /tmp/baseline.o
+          g++ -O3 -std=c++11 -pthread -Icommon tests/prog6_profile.cpp prog6_kmeans/kmeansThread.cpp /tmp/baseline.o -o /tmp/kmeans-profile
           /tmp/kmeans-profile | tee evidence/profile.txt
       - uses: actions/upload-artifact@v4
         if: always()
