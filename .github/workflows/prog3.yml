@@ -33,6 +33,8 @@ jobs:
           done
           g++ -O2 -ffp-contract=off -pthread -Iobjs ../tests/prog3_boundaries.cpp mandelbrotSerial.cpp objs/mandelbrot_ispc.o objs/tasksys.o -o /tmp/prog3-boundaries
           /tmp/prog3-boundaries > ../evidence/boundaries.txt
+      - name: Task grain measurements against original two-task baseline
+        run: bash scripts/prog3_sweep.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
