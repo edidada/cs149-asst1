@@ -247,8 +247,8 @@ void clampedExpVector(float* values, int* exponents, float* output, int N) {
   auto limit = _cs149_vset_float(9.999999f);
   for(int i=0;i<N;i+=VECTOR_WIDTH){
     auto valid = _cs149_init_ones(std::min(VECTOR_WIDTH,N-i));
-    __cs149_vec_float x, result;
-    __cs149_vec_int count;
+    __cs149_vec_float x = _cs149_vset_float(0.f), result = _cs149_vset_float(0.f);
+    __cs149_vec_int count = _cs149_vset_int(0);
     _cs149_vload_float(x,values+i,valid);
     _cs149_vload_int(count,exponents+i,valid);
     _cs149_vmove_float(result,x,valid);
@@ -266,7 +266,14 @@ void clampedExpVector(float* values, int* exponents, float* output, int N) {
     auto clamp = _cs149_init_ones(0);
     _cs149_vgt_float(clamp,result,limit,valid);
     _cs149_vmove_float(result,limit,clamp);
-    _cs149_vstore_float(output+i,result,valid);
+    if(N-i >= VECTOR_WIDTH){
+      _cs149_vstore_float(output+i,result,valid);
+    } else {
+      // The teaching store reads/writes dest even for disabled lanes.
+      float tail[VECTOR_WIDTH] = {};
+      _cs149_vstore_float(tail,result,valid);
+      for(int lane=0;lane<N-i;lane++) output[i+lane]=tail[lane];
+    }
   }
 }
 

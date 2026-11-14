@@ -1,3 +1,5 @@
 # CS149 Assignment1 Program2
 
 基线05e602d3445123eab76ae1d0f81c370c34441e13。clampedExpVector使用尾部有效掩码、指数零输出1、活动掩码和最终上限；重复乘法顺序与原串行保持。arraySumVector先逐lane累计，再hadd/interleave归约，复杂度N/W+logW；浮点加法重排存在舍入差异。原框架和验证逻辑保持，四种宽度在临时副本调整宏。待远端及独立边界/ASan验证和利用率分析，不能验收。原main失败可能返回0，CI另查失败文本。本地未编译运行，无新增Python源文件。
+
+独立紧边界ASan发现教学vstore在无效lane也读写dest[i]，原测试padding掩盖问题。最终不足向量宽度时先store完整临时数组，再复制有效元素；不改框架、不放宽边界测试。初始化向量无效lane避免框架保留值时读取未初始化数据。
