@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 # All variants are disposable copies. Student implementation stays unchanged.
-for rows in 1 2 4 8 16 32 64 original; do
+for rows in 1 2 4 8 16 20 32 40 80 160 original; do
   variant=$(mktemp -d)
   cp -r common prog3_mandelbrot_ispc "$variant/"
   rm -rf "$variant/prog3_mandelbrot_ispc/objs"
@@ -13,7 +13,7 @@ for rows in 1 2 4 8 16 32 64 original; do
 import sys
 from pathlib import Path
 p=Path(sys.argv[1]);s=p.read_text();rows=int(sys.argv[2])
-# Exact divisors of the original 768-row benchmark, avoiding dropped rows.
+# Exact divisors of the original 800-row benchmark, avoiding dropped rows.
 s=s.replace('rowsPerTask = 1;',f'rowsPerTask = {rows};').replace('launch[height]','launch[height / rowsPerTask]')
 p.write_text(s)
 PYCODE
