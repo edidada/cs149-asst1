@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <thread>
+#include <cstdlib>
+#include <cstring>
+#include <cstdint>
 
 #include "CycleTimer.h"
 
@@ -12,6 +15,8 @@ typedef struct {
     int* output;
     int threadId;
     int numThreads;
+    bool block;
+    double elapsed;
 } WorkerArgs;
 
 
@@ -29,13 +34,20 @@ extern void mandelbrotSerial(
 // Thread entrypoint.
 void workerThreadStart(WorkerArgs * const args) {
 
-    // TODO FOR CS149 STUDENTS: Implement the body of the worker
-    // thread here. Each thread should make a call to mandelbrotSerial()
-    // to compute a part of the output image.  For example, in a
-    // program that uses two threads, thread 0 could compute the top
-    // half of the image and thread 1 could compute the bottom half.
-
-    printf("Hello world from thread %d\n", args->threadId);
+    double start = CycleTimer::currentSeconds();
+    if (args->block) {
+        int begin = (uint64_t(args->height) * args->threadId) / args->numThreads;
+        int end = (uint64_t(args->height) * (args->threadId+1)) / args->numThreads;
+        mandelbrotSerial(args->x0, args->y0, args->x1, args->y1,
+            args->width, args->height, begin, end-begin,
+            args->maxIterations, args->output);
+    } else {
+        for (unsigned row = args->threadId; row < args->height; row += args->numThreads)
+            mandelbrotSerial(args->x0, args->y0, args->x1, args->y1,
+                args->width, args->height, row, 1,
+                args->maxIterations, args->output);
+    }
+    args->elapsed = CycleTimer::currentSeconds() - start;
 }
 
 //
@@ -51,7 +63,7 @@ void mandelbrotThread(
 {
     static constexpr int MAX_THREADS = 32;
 
-    if (numThreads > MAX_THREADS)
+    if (numThreads < 1 || numThreads > MAX_THREADS)
     {
         fprintf(stderr, "Error: Max allowed threads is %d\n", MAX_THREADS);
         exit(1);
@@ -77,6 +89,8 @@ void mandelbrotThread(
         args[i].output = output;
       
         args[i].threadId = i;
+        const char *policy = std::getenv("MANDELBROT_POLICY");
+        args[i].block = policy && std::strcmp(policy, "block") == 0;
     }
 
     // Spawn the worker threads.  Note that only numThreads-1 std::threads
@@ -92,5 +106,10 @@ void mandelbrotThread(
     for (int i=1; i<numThreads; i++) {
         workers[i].join();
     }
+    if (std::getenv("MANDELBROT_TIMING"))
+        for (int i=0; i<numThreads; i++)
+            printf("worker %d policy=%s ms=%.6f\n", i,
+                args[i].block ? "block" : "cyclic", args[i].elapsed*1000);
+
 }
 
