@@ -1,0 +1,34 @@
+name: CS149 Program 2 SIMD
+on:
+  push:
+    branches: [edidada/prog2]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Original tests at four widths
+        run: |
+          set -euo pipefail
+          mkdir evidence
+          git rev-parse HEAD > evidence/commit.txt
+          for width in 2 4 8 16; do
+            cp -r prog2_vecintrin /tmp/prog2-$width
+            cd /tmp/prog2-$width
+            sed -i "s/#define VECTOR_WIDTH 4/#define VECTOR_WIDTH $width/" CS149intrin.h
+            make
+            for n in 1 3 17 10000; do
+              ./myexp -s $n > "$GITHUB_WORKSPACE/evidence/w$width-n$n.txt"
+              grep -q 'Passed!!!' "$GITHUB_WORKSPACE/evidence/w$width-n$n.txt"
+              if grep -q 'Failed!!!' "$GITHUB_WORKSPACE/evidence/w$width-n$n.txt"; then exit 1; fi
+            done
+            cd "$GITHUB_WORKSPACE"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prog2-results
+          path: evidence/

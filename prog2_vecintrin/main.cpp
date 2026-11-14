@@ -242,14 +242,32 @@ void clampedExpSerial(float* values, int* exponents, float* output, int N) {
 
 void clampedExpVector(float* values, int* exponents, float* output, int N) {
 
-  //
-  // CS149 STUDENTS TODO: Implement your vectorized version of
-  // clampedExpSerial() here.
-  //
-  // Your solution should work for any value of
-  // N and VECTOR_WIDTH, not just when VECTOR_WIDTH divides N
-  //
-  
+  auto zero = _cs149_vset_int(0);
+  auto one = _cs149_vset_int(1);
+  auto limit = _cs149_vset_float(9.999999f);
+  for(int i=0;i<N;i+=VECTOR_WIDTH){
+    auto valid = _cs149_init_ones(std::min(VECTOR_WIDTH,N-i));
+    __cs149_vec_float x, result;
+    __cs149_vec_int count;
+    _cs149_vload_float(x,values+i,valid);
+    _cs149_vload_int(count,exponents+i,valid);
+    _cs149_vmove_float(result,x,valid);
+    auto iszero = _cs149_init_ones(0);
+    _cs149_veq_int(iszero,count,zero,valid);
+    _cs149_vset_float(result,1.f,iszero);
+    _cs149_vsub_int(count,count,one,valid);
+    auto active = _cs149_init_ones(0);
+    _cs149_vgt_int(active,count,zero,valid);
+    while(_cs149_cntbits(active)){
+      _cs149_vmult_float(result,result,x,active);
+      _cs149_vsub_int(count,count,one,active);
+      _cs149_vgt_int(active,count,zero,valid);
+    }
+    auto clamp = _cs149_init_ones(0);
+    _cs149_vgt_float(clamp,result,limit,valid);
+    _cs149_vmove_float(result,limit,clamp);
+    _cs149_vstore_float(output+i,result,valid);
+  }
 }
 
 // returns the sum of all elements in values
@@ -267,14 +285,19 @@ float arraySumSerial(float* values, int N) {
 // You can assume VECTOR_WIDTH is a power of 2
 float arraySumVector(float* values, int N) {
   
-  //
-  // CS149 STUDENTS TODO: Implement your vectorized version of arraySumSerial here
-  //
-  
-  for (int i=0; i<N; i+=VECTOR_WIDTH) {
-
+  auto total = _cs149_vset_float(0.f);
+  auto all = _cs149_init_ones();
+  for(int i=0;i<N;i+=VECTOR_WIDTH){
+    __cs149_vec_float x;
+    _cs149_vload_float(x,values+i,all);
+    _cs149_vadd_float(total,total,x,all);
   }
-
-  return 0.0;
+  for(int lanes=VECTOR_WIDTH;lanes>1;lanes/=2){
+    __cs149_vec_float pairs, packed;
+    _cs149_hadd_float(pairs,total);
+    _cs149_interleave_float(packed,pairs);
+    total = packed;
+  }
+  return total.value[0];
 }
 
