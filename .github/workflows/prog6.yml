@@ -1,0 +1,26 @@
+name: CS149 Program 6 profile
+on:
+  push:
+    branches: [edidada/prog6]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  profile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Synthetic baseline hotspot measurement
+        run: |
+          set -euo pipefail
+          mkdir evidence
+          git rev-parse HEAD > evidence/commit.txt
+          lscpu > evidence/cpu.txt
+          g++ -O3 -std=c++11 -pthread -Icommon tests/prog6_profile.cpp prog6_kmeans/kmeansThread.cpp -o /tmp/kmeans-profile
+          /tmp/kmeans-profile | tee evidence/profile.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prog6-results
+          path: evidence/
