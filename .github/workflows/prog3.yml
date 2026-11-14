@@ -1,0 +1,40 @@
+name: CS149 Program 3 ISPC tasks
+on:
+  push:
+    branches: [edidada/prog3]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pinned compiler
+        run: |
+          curl -fL https://github.com/ispc/ispc/releases/download/v1.28.1/ispc-v1.28.1-linux.tar.gz -o /tmp/ispc.tar.gz
+          echo '00697aadb6e41e01568c9ef75446a0d3074ca05292c35c359f98a8fd27758791  /tmp/ispc.tar.gz' | sha256sum -c -
+          tar -xf /tmp/ispc.tar.gz -C /tmp
+          echo /tmp/ispc-v1.28.1-linux/bin >> "$GITHUB_PATH"
+      - name: Original views and independent remainder images
+        run: |
+          set -euo pipefail
+          mkdir evidence
+          git rev-parse HEAD > evidence/commit.txt
+          ispc --version > evidence/compiler.txt
+          lscpu > evidence/cpu.txt
+          make -C prog3_mandelbrot_ispc
+          cd prog3_mandelbrot_ispc
+          for view in 1 2; do
+            ./mandelbrot_ispc --view $view --tasks > ../evidence/view$view.txt
+            cmp mandelbrot-serial.ppm mandelbrot-ispc.ppm
+            cmp mandelbrot-serial.ppm mandelbrot-task-ispc.ppm
+          done
+          g++ -O2 -ffp-contract=off -pthread -Iobjs ../tests/prog3_boundaries.cpp mandelbrotSerial.cpp objs/mandelbrot_ispc.o objs/tasksys.o -o /tmp/prog3-boundaries
+          /tmp/prog3-boundaries > ../evidence/boundaries.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prog3-results
+          path: evidence/
