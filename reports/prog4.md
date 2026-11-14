@@ -1,0 +1,5 @@
+# CS149 Program4 sqrt
+
+基线05e602d3445123eab76ae1d0f81c370c34441e13。原2000万元素、初始猜测1、串行/ISPC/tasks算法和三遍取最小计时保持。random保留原分布；uniform-hard全2.999使每lane执行较多相同迭代；divergent每8lane仅一个2.999、另七个1立即收敛，使gang仍等待慢lane而串行只有八分之一重算。它们是理论候选，不能在测量前宣称实际极值。
+
+原verifyResult只打印错误且NaN可逃过，现拒绝非有限值并立即失败，仍逐项与标准sqrt比较1e-4。串行原缺math声明，仅补cmath。固定ISPC1.28.1官方SHA256。待远端完整三输入测量、独立边界与分析。可选AVX2手写未实现；GitHub runner不替代myth，整Assignment1未完成。本地不编译运行，无新增Python源文件。

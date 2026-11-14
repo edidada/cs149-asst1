@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <pthread.h>
 #include <math.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "CycleTimer.h"
 #include "sqrt_ispc.h"
@@ -12,13 +14,19 @@ extern void sqrtSerial(int N, float startGuess, float* values, float* output);
 
 static void verifyResult(int N, float* result, float* gold) {
     for (int i=0; i<N; i++) {
-        if (fabs(result[i] - gold[i]) > 1e-4) {
+        if (!std::isfinite(result[i]) || fabs(result[i] - gold[i]) > 1e-4) {
             printf("Error: [%d] Got %f expected %f\n", i, result[i], gold[i]);
+            exit(1);
         }
     }
 }
 
-int main() {
+int main(int argc, char **argv) {
+    const char *mode = argc > 1 ? argv[1] : "random";
+    if(strcmp(mode,"random") && strcmp(mode,"uniform-hard") && strcmp(mode,"divergent")){
+        fprintf(stderr,"mode: random | uniform-hard | divergent\n"); return 1;
+    }
+    printf("input=%s N=20000000\n",mode);
 
     const unsigned int N = 20 * 1000 * 1000;
     const float initialGuess = 1.0f;
@@ -34,7 +42,12 @@ int main() {
         // to you generate best and worse-case speedups
         
         // starter code populates array with random input values
-        values[i] = .001f + 2.998f * static_cast<float>(rand()) / RAND_MAX;
+        if(strcmp(mode,"uniform-hard")==0)
+            values[i] = 2.999f;
+        else if(strcmp(mode,"divergent")==0)
+            values[i] = i%8==0 ? 2.999f : 1.f;
+        else
+            values[i] = .001f + 2.998f * static_cast<float>(rand()) / RAND_MAX;
     }
 
     // generate a gold version to check results
