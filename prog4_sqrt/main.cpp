@@ -26,7 +26,9 @@ int main(int argc, char **argv) {
     if(strcmp(mode,"random") && strcmp(mode,"uniform-hard") && strcmp(mode,"divergent")){
         fprintf(stderr,"mode: random | uniform-hard | divergent\n"); return 1;
     }
-    printf("input=%s N=20000000\n",mode);
+    float hard = argc > 2 ? std::strtof(argv[2], nullptr) : 2.999f;
+    if(!std::isfinite(hard) || hard <= 0.f || hard >= 3.f) return 1;
+    printf("input=%s hard=%.8g N=20000000\n",mode,hard);
 
     const unsigned int N = 20 * 1000 * 1000;
     const float initialGuess = 1.0f;
@@ -43,9 +45,9 @@ int main(int argc, char **argv) {
         
         // starter code populates array with random input values
         if(strcmp(mode,"uniform-hard")==0)
-            values[i] = 2.999f;
+            values[i] = hard;
         else if(strcmp(mode,"divergent")==0)
-            values[i] = i%8==0 ? 2.999f : 1.f;
+            values[i] = i%8==0 ? hard : 1.f;
         else
             values[i] = .001f + 2.998f * static_cast<float>(rand()) / RAND_MAX;
     }

@@ -31,6 +31,13 @@ jobs:
           for mode in random uniform-hard divergent; do
             ./sqrt "$mode" > "../evidence/$mode.txt"
           done
+      - name: Uniform input candidate measurements
+        run: |
+          set -euo pipefail
+          cd prog4_sqrt
+          for value in 0.001 0.01 0.1 0.5 1 1.5 2 2.5 2.9 2.99 2.999; do
+            ./sqrt uniform-hard "$value" > "../evidence/uniform-$value.txt"
+          done
       - name: Independent small sizes and task remainders
         run: |
           set -euo pipefail
