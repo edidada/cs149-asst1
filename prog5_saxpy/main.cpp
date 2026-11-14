@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <algorithm>
+#include <cstdlib>
 
 #include "CycleTimer.h"
 #include "saxpy_ispc.h"
@@ -22,6 +23,7 @@ static void verifyResult(int N, float* result, float* gold) {
     for (int i=0; i<N; i++) {
         if (result[i] != gold[i]) {
             printf("Error: [%d] Got %f expected %f\n", i, result[i], gold[i]);
+            exit(1);
         }
     }
 }
@@ -65,10 +67,7 @@ int main() {
         minSerial = std::min(minSerial, endTime - startTime);
     }
 
-// printf("[saxpy serial]:\t\t[%.3f] ms\t[%.3f] GB/s\t[%.3f] GFLOPS\n",
-    //       minSerial * 1000,
-    //       toBW(TOTAL_BYTES, minSerial),
-    //       toGFLOPS(TOTAL_FLOPS, minSerial));
+    printf("[saxpy serial]: %.3f ms\n", minSerial*1000);
 
     //
     // Run the ISPC (single core) implementation
@@ -107,8 +106,8 @@ int main() {
            toGFLOPS(TOTAL_FLOPS, minTaskISPC));
 
     printf("\t\t\t\t(%.2fx speedup from use of tasks)\n", minISPC/minTaskISPC);
-    //printf("\t\t\t\t(%.2fx speedup from ISPC)\n", minSerial/minISPC);
-    //printf("\t\t\t\t(%.2fx speedup from task ISPC)\n", minSerial/minTaskISPC);
+    printf("\t\t\t\t(%.2fx speedup from ISPC)\n", minSerial/minISPC);
+    printf("\t\t\t\t(%.2fx speedup from task ISPC)\n", minSerial/minTaskISPC);
 
     delete[] arrayX;
     delete[] arrayY;

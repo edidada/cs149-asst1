@@ -1,0 +1,38 @@
+name: CS149 Program 5 SAXPY
+on:
+  push:
+    branches: [edidada/prog5]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Pinned compiler
+        run: |
+          curl -fL https://github.com/ispc/ispc/releases/download/v1.28.1/ispc-v1.28.1-linux.tar.gz -o /tmp/ispc.tar.gz
+          echo '00697aadb6e41e01568c9ef75446a0d3074ca05292c35c359f98a8fd27758791  /tmp/ispc.tar.gz' | sha256sum -c -
+          tar -xf /tmp/ispc.tar.gz -C /tmp
+          echo /tmp/ispc-v1.28.1-linux/bin >> "$GITHUB_PATH"
+      - name: Original workload and independent boundaries
+        run: |
+          set -euo pipefail
+          mkdir evidence
+          git rev-parse HEAD > evidence/commit.txt
+          ispc --version > evidence/compiler.txt
+          lscpu > evidence/cpu.txt
+          make -C prog5_saxpy
+          cd prog5_saxpy
+          ./saxpy > ../evidence/saxpy.txt
+          g++ -O2 -pthread -Iobjs ../tests/prog5_boundaries.cpp saxpySerial.cpp objs/saxpy_ispc.o objs/tasksys.o -o /tmp/saxpy-boundaries
+          /tmp/saxpy-boundaries > ../evidence/boundaries.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prog5-results
+          path: evidence/

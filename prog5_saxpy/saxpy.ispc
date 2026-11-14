@@ -33,7 +33,8 @@ export void saxpy_ispc_withtasks(uniform int N,
                                uniform float result[])
 {
 
-    uniform int span = N / 64;  // 64 tasks
+    if (N <= 0) return;
+    uniform int span = (N + 63) / 64;
 
-    launch[N/span] saxpy_ispc_task(N, span, scale, X, Y, result);
+    launch[(N + span - 1)/span] saxpy_ispc_task(N, span, scale, X, Y, result);
 }
