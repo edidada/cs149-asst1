@@ -31,6 +31,12 @@ jobs:
           for mode in random uniform-hard divergent; do
             ./sqrt "$mode" > "../evidence/$mode.txt"
           done
+      - name: Independent small sizes and task remainders
+        run: |
+          set -euo pipefail
+          cd prog4_sqrt
+          g++ -O2 -pthread -Iobjs ../tests/prog4_boundaries.cpp sqrtSerial.cpp objs/sqrt_ispc.o objs/tasksys.o -o /tmp/sqrt-boundaries
+          /tmp/sqrt-boundaries > ../evidence/boundaries.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
