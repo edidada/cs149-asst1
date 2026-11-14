@@ -20,6 +20,9 @@ jobs:
             cd /tmp/prog2-$width
             sed -i "s/#define VECTOR_WIDTH 4/#define VECTOR_WIDTH $width/" CS149intrin.h
             make
+            g++ -std=c++11 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -Dmain=original_main -c main.cpp -o student.o
+            g++ -std=c++11 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -I. "$GITHUB_WORKSPACE/tests/prog2_boundaries.cpp" student.o CS149intrin.cpp logger.cpp -o boundaries
+            ./boundaries > "$GITHUB_WORKSPACE/evidence/w$width-boundaries.txt"
             for n in 1 3 17 10000; do
               ./myexp -s $n > "$GITHUB_WORKSPACE/evidence/w$width-n$n.txt"
               grep -q 'Passed!!!' "$GITHUB_WORKSPACE/evidence/w$width-n$n.txt"
