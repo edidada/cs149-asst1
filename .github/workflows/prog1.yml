@@ -27,6 +27,11 @@ jobs:
               done
             done
           done
+      - name: Independent small dimensions under sanitizers
+        run: |
+          set -euo pipefail
+          g++ -std=c++11 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -pthread -Icommon tests/prog1_boundaries.cpp prog1_mandelbrot_threads/mandelbrotSerial.cpp prog1_mandelbrot_threads/mandelbrotThread.cpp -o /tmp/prog1-boundaries
+          /tmp/prog1-boundaries | tee evidence/boundaries.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
